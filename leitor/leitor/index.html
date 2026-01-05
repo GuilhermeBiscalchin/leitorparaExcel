@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leitor de Excel</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      padding: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 8px;
+    }
+
+    th {
+      background: #f4f4f4;
+    }
+  </style>
+
+</head>
+
+<body>
+  <div id="app"></div>
+  <h2>Leitura de Excel - Offline</h2>
+  <input type="file" id="excelFile" accept=".xlsx,.xls">
+  <table id="tabela">
+    <thead>
+      <tr>
+        <th>CNPJ</th>
+        <th>Razão Social</th>
+        <th>Cidade</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <script type="module" src="/main.js"></script>
+</body>
+
+</html>
