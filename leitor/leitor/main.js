@@ -1,16 +1,43 @@
-const input = document.getElementById("excelFile");
+const cidadesDiv = document.getElementById("cidades");
+const tbody = document.querySelector("#tabela tbody");
 
-input.addEventListener("change", async () => {
-    const file = input.files[0];
-    if (!file) return;
+window.addEventListener("DOMContentLoaded", carregarCidades);
 
-    const formData = new FormData();
-    formData.append("file", file);
+// 1️⃣ Carregar cidades
+async function carregarCidades() {
+    const res = await fetch("http://localhost:3003/clientes/porcidade");
+    const cidades = await res.json();
 
-    await fetch("http://localhost:3003/upload", {
-        method: "POST",
-        body: formData
+    cidadesDiv.innerHTML = "";
+
+    cidades.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "cidade";
+        div.textContent = `${c._id} (${c.total})`;
+
+        div.addEventListener("click", () => {
+            carregarClientesDaCidade(c._id);
+        });
+
+        cidadesDiv.appendChild(div);
     });
+}
 
-    alert("Arquivo enviado para processamento");
-});
+// 2️⃣ Carregar clientes da cidade clicada
+async function carregarClientesDaCidade(cidade) {
+    const res = await fetch(`http://localhost:3003/clientes/cidade/${cidade}`);
+    const clientes = await res.json();
+
+    tbody.innerHTML = "";
+
+    clientes.forEach(c => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${c.cnpj}</td>
+            <td>${c.razaoSocial}</td>
+            <td>${c.cidade}</td>
+            <td>${c.status}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
