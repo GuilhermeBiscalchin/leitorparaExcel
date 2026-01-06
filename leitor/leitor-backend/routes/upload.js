@@ -1,43 +1,61 @@
-const express = require("express");
-const multer = require("multer");
-const Arquivo = require("../models/arquivo");
-const path = require("path");
+import express from "express";
+import multer from "multer";
+import XLSX from "xlsx";
+import Cliente from "../models/Cliente.js";
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, "uploads/arquivos");
-    },
-    filename: (req, file, cb) => {
-        const uniqueName = Date.now() + "-" + file.originalname;
-        cb(null, uniqueName);
-    }
-});
-
-const upload = multer({ storage });
-
-router.post("/", upload.single("arquivo"), async (req, res) => {
+router.post("/", upload.single("file"), async (req, res) => {
     try {
-        const file = req.file;
+        if (!req.file) {
+            return res.status(400).json({ erro: "Arquivo não enviado" });
+        }
 
-        const novoArquivo = new Arquivo({
-            nomeOriginal: file.originalname,
-            nomeServidor: file.filename,
-            tipo: file.mimetype,
-            tamanho: file.size
+        const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+        console.log("📄 Linhas lidas do Excel:", rows.length);
+
+        if (rows.length === 0) {
+            return res.status(400).json({ erro: "Planilha vazia" });
+        }
+
+        const clientes = rows.map(row => {
+            const colunas = {};
+
+            Object.keys(row).forEach(key => {
+                const normalizada = key
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .replace(/\s+/g, "");
+
+                colunas[normalizada] = row[key];
+            });
+
+            return {
+                cnpj: String(colunas.cnpj || "").trim(),
+                razaoSocial: colunas.razaosocial || "",
+                cidade: colunas.cidade || "",
+                status: colunas.status || ""
+            };
         });
 
-        await novoArquivo.save();
+        const inseridos = await Cliente.insertMany(clientes);
+
+        console.log("✅ Clientes salvos:", inseridos.length);
 
         res.json({
-            sucesso: true,
-            mensagem: "Arquivo salvo com sucesso"
+            mensagem: "Planilha processada com sucesso",
+            total: inseridos.length
         });
 
     } catch (err) {
-        res.status(500).json({ erro: err.message });
+        console.error("❌ Erro no upload:", err);
+        res.status(500).json({ erro: "Erro ao processar planilha" });
     }
 });
 
-module.exports = router;
+export default router;
